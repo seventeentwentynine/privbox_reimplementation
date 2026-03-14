@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 # Define structure of API requests/responses.
-# Rule-related models
+# Rule related models which will use the crypto package, need to implement Priv Box Encryption still
 class Rule(BaseModel):
     rule_id: str
     keyword: str  # For Protocol I, start with single keywords
@@ -15,7 +15,7 @@ class RuleSet(BaseModel):
 
 # Protocol messages
 class RuleTuple(BaseModel):
-    """The rule tuple (R̂_i, Sig_RG(R̂_i), Sig_MB(R̂_i), etc.)"""
+    """The rule tuple (R^{hat}_i, Sig_RG(R^{hat}_i), Sig_MB(R^{hat}_i), etc.)"""
     R: str  # Base64 encoded group element
     signature_rg: str
     signature_mb: str
