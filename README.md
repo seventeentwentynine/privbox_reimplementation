@@ -1,6 +1,12 @@
 # Privbox Reimplementation
 CMPT783 Spring 2026 Project Group Byte4Byte
 
+# High level Architecture Diagram based on the paper
+## Will update as the code matures
+
+<img width="4328" height="2444" alt="image" src="https://github.com/user-attachments/assets/3c8e0ccb-3350-4f5e-a30e-99ac6011556f" />
+
+
 # Skeleton
 
 We can use this inital skeleton to implement the API and core functionality for the Privbox reimplementation. 
