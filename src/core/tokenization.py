@@ -1,6 +1,6 @@
-class Tokenizer:
-    def tokenize(self, data: bytes):
-        # placeholder tokenizer for API wiring.
-        return data.split()
+class TokenEncryption:
+    def encrypt(self, data: bytes):
+        # TODO: Implement how senders encrypt traffic into tokens that MB can inspect
+        return data
 
-tokenizer = Tokenizer()
+token_encryption = TokenEncryption()
