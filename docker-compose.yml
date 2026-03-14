@@ -1,0 +1,13 @@
+# docker-compose.yml
+
+services:
+  privbox:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
