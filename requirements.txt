@@ -1,7 +1,7 @@
 fastapi==0.104.1
 uvicorn==0.24.0
 pydantic==2.5.0
-cryptography==41.0.7
+cryptography==46.0.5
 python-multipart==0.0.6
 pycryptodome==3.19.1
 ecdsa==0.18.0
