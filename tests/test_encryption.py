@@ -60,13 +60,13 @@ def test_encryption():
     print(f"Matches2: {matches2}")
 
     if matches:
-        print("\n✓ Correct: attack payload matched")
+        print("\nCorrect: attack payload matched")
     else:
-        print("\n✗ Error: attack payload did not match")
+        print("\nError: attack payload did not match")
     if not matches2:
-        print("✓ Correct: benign payload did not match")
+        print("Correct: benign payload did not match")
     else:
-        print("✗ Error: benign payload matched unexpectedly")
+        print("Error: benign payload matched unexpectedly")
 
 if __name__ == "__main__":
     test_encryption()
