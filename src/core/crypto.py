@@ -14,8 +14,8 @@ class PrivBoxCrypto:
         h = hashlib.sha256(data).digest()
         return int.from_bytes(h, 'big') % self.order
 
-    def H2(self, s: str) -> int:
-        return self._hash_to_scalar(s.encode())
+    def H2(self, data: bytes) -> int:
+        return self._hash_to_scalar(data)
 
     def H3(self, point: PublicKey) -> int:
         return self._hash_to_scalar(point.format())
