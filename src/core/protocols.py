@@ -1,20 +1,32 @@
-class Protocols:
-    def __init__(self):
-        # TODO: Implement the three protocols mentioned in the paper:
-        # 1. Rule Preparation Protocol: Setup btw RG and MB to generate rule tuples (Fig. 2)
-        # 2. Preprocessing Protocol: Init session between MB and endpoints to generate obfuscated rules (Fig. 3)
-        # 3. Session rule preparation Protocol: Generate session specific rules (Fig. 5)
-        pass
+# src/core/protocols.py
+"""
+Protocols from the PrivBox paper:
+- Fig. 2: Rule Preparation Protocol (RG ↔ MB)
+- Fig. 3: Preprocessing Protocol (MB ↔ Endpoints, first session)
+- Fig. 5: Session Rule Preparation Protocol
+"""
 
 class RulePreparationProtocol:
+    """Fig. 2: Setup between RG and MB to generate rule tuples"""
+    
     def __init__(self):
-        pass
-
+        self.rg_state = {}
+        self.mb_state = {}
+    
+    # Will be implemented after encryption is working
+    
 class PreprocessingProtocol:
-    def __init__(self):
-        pass
-
-class SessionRulePreparationProtocol:
+    """Fig. 3: First session between MB and endpoints"""
+    
     def __init__(self):
         pass
     
+    # Will be implemented after encryption is working
+
+class SessionRulePreparationProtocol:
+    """Fig. 5: Generate session-specific rules I_i from obfuscated rules K_i"""
+    
+    def __init__(self):
+        pass
+    
+    # Will be implemented after encryption is working
