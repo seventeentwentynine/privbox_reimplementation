@@ -4,7 +4,7 @@ CMPT783 Spring 2026 Project Group Byte4Byte
 # High level Architecture Diagram based on the paper
 ## Will update as the code matures
 
-<img width="4328" height="2444" alt="image" src="https://github.com/user-attachments/assets/3c8e0ccb-3350-4f5e-a30e-99ac6011556f" />
+<img width="4884" height="2448" alt="Image" src="https://github.com/user-attachments/assets/c4eceaf1-bf1b-42eb-a16f-0a749755108b" />
 
 
 # Skeleton
