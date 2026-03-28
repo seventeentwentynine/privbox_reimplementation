@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from typing import List, Dict
 import base64
 import os
@@ -8,6 +8,8 @@ from core.crypto import crypto
 from core.tokenization import tokenizer
 
 router = APIRouter()
+app = FastAPI(title="Middlebox API")
+app.include_router(router)
 
 class MiddleboxState:
     def __init__(self):

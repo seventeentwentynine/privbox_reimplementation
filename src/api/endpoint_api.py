@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException
 from typing import List
 import base64
 import os
@@ -8,6 +8,8 @@ from core.crypto import crypto
 from core.tokenization import tokenizer
 
 router = APIRouter()
+app = FastAPI(title="Endpoint API")
+app.include_router(router)
 
 class EndpointState:
     def __init__(self):

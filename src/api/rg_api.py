@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from typing import List
 import base64
 import json
@@ -8,6 +8,8 @@ from .models import Rule, RuleSet, RuleTuple
 from core.crypto import crypto
 
 router = APIRouter()
+app = FastAPI(title="Rule Generator API")
+app.include_router(router)
 
 # simple in-memory storage for now
 class RuleStorage:
