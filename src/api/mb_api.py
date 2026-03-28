@@ -4,8 +4,8 @@ import base64
 import os
 
 from .models import Session, EncryptedToken, RuleTuple
-from core.crypto import crypto
-from core.tokenization import tokenizer
+from src.core.crypto import crypto
+from src.core.tokenization import token_encryption
 
 router = APIRouter()
 app = FastAPI(title="Middlebox API")

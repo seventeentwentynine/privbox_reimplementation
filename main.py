@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from api import rg_api, mb_api, endpoint_api
 

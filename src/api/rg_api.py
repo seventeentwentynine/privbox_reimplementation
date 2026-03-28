@@ -5,7 +5,7 @@ import json
 import os
 
 from .models import Rule, RuleSet, RuleTuple
-from core.crypto import crypto
+from src.core.crypto import crypto
 
 router = APIRouter()
 app = FastAPI(title="Rule Generator API")

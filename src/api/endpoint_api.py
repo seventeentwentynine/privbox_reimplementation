@@ -4,8 +4,8 @@ import base64
 import os
 
 from .models import Session, EncryptedToken
-from core.crypto import crypto
-from core.tokenization import tokenizer
+from src.core.crypto import crypto
+from src.core.tokenization import token_encryption
 
 router = APIRouter()
 app = FastAPI(title="Endpoint API")
@@ -65,9 +65,9 @@ async def send_data(request: dict):
     
     # Tokenize the payload
     if isinstance(payload, str):
-        tokens = tokenizer.delimiter_based_tokenization(payload)
+        tokens = token_encryption.delimiter_based_tokenization(payload)
     else:
-        tokens = tokenizer.window_based_tokenization(payload.encode())
+        tokens = token_encryption.window_based_tokenization(payload.encode())
     
     encrypted_tokens = []
     
