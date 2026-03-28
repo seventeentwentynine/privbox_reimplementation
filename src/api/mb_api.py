@@ -9,7 +9,6 @@ from core.tokenization import tokenizer
 
 router = APIRouter()
 app = FastAPI(title="Middlebox API")
-app.include_router(router)
 
 class MiddleboxState:
     def __init__(self):
@@ -101,3 +100,5 @@ async def update_rules(rules: dict):
         # precompute encrypted rules for fast lookup
         pass
     return {"message": f"Updated {len(rules)} rules"}
+
+app.include_router(router)

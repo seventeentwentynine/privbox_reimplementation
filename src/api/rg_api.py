@@ -9,7 +9,6 @@ from core.crypto import crypto
 
 router = APIRouter()
 app = FastAPI(title="Rule Generator API")
-app.include_router(router)
 
 # simple in-memory storage for now
 class RuleStorage:
@@ -88,3 +87,5 @@ async def load_rules():
     ]
     rule_storage.rules = sample_rules
     return {"message": f"Loaded {len(sample_rules)} rules", "rules": sample_rules}
+
+app.include_router(router)

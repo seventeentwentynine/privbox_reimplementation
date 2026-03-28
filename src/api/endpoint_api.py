@@ -126,3 +126,5 @@ async def validate_traffic(request: dict):
         "valid": True,  # Placeholder
         "message": "Traffic validation complete"
     }
+
+app.include_router(router)
