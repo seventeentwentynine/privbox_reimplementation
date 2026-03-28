@@ -1,13 +1,49 @@
 # docker-compose.yml
 
 services:
-  privbox:
+
+  rule-generator:  # Rule Generator
     build: .
+    container_name: privbox-rg
     ports:
-      - "8000:8000"
+      - "8001:8000"  # Accessible on localhost at port 8001
     volumes:
       - .:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app/src
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn src.api.rg_api:app --host 0.0.0.0 --port 8000 --reload
+  
+  middlebox:  # Middlebox
+    build: .
+    container_name: privbox-mb
+    ports:
+      - "8002:8000"  # Accessible on localhost at port 8002
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: uvicorn src.api.mb_api:app --host 0.0.0.0 --port 8000 --reload
+  
+  sender:
+    build: .
+    container_name: privbox-sender
+    ports:
+      - "8003:8000"  # Accessible on localhost at port 8003
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ROLE=sender
+    command: uvicorn src.api.endpoint_api:app --host 0.0.0.0 --port 8000 --reload
+
+  receiver:
+    build: .
+    container_name: privbox-receiver
+    ports:
+      - "8004:8000"  # Accessible on localhost at port 8004
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - ROLE=receiver
+    command: uvicorn src.api.endpoint_api:app --host 0.0.0.0 --port 8000 --reload
