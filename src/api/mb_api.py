@@ -5,7 +5,6 @@ import os
 
 from .models import Session, EncryptedToken, RuleTuple
 from core.crypto import crypto
-from core.tokenization import tokenizer
 
 router = APIRouter()
 

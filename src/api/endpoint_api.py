@@ -99,7 +99,7 @@ async def send_data(request: dict):
     
     return {
         "session_id": session_id,
-        "encrypted_tokens": [t.dict() for t in encrypted_tokens],
+        "encrypted_tokens": [t.model_dump() for t in encrypted_tokens],
         "tls_traffic": tls_encrypted
     }
 

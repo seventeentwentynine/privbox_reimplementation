@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -33,8 +33,9 @@ class EncryptedToken(BaseModel):
 
 # Session management
 class Session(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     session_id: str
-    created_at: datetime
+    created_at: datetime = Field(default_factory=datetime.now)
     k_s1: Optional[bytes] = None
     k_s2: Optional[bytes] = None
     k_ssl: Optional[bytes] = None

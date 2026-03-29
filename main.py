@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import uvicorn
 from api import rg_api, mb_api, endpoint_api
 
 app = FastAPI(title="PrivBox DPI System")

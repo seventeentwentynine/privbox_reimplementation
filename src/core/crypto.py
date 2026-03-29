@@ -6,6 +6,12 @@ from dataclasses import dataclass
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
+try:
+    from charm.toolbox.pairinggroup import PairingGroup, G1, ZR, pair
+    CHARM_AVAILABLE = True
+except ImportError:
+    CHARM_AVAILABLE = False
+
 @dataclass
 class RGSecrets:
     """RG's secrets a, r from Section IV-B"""
@@ -49,11 +55,11 @@ class PrivBoxCrypto:
             self.group = PairingGroup(curve)
             self.g = self.group.random(G1)  # generator g
         else:
-            self.group = PairingGroup(curve)
+            self.group = None
             self.g = b"generator_placeholder"
         
         # Hash functions as defined in paper
-        self.H1 = self._hash_to_key  # H1: G -> K (keyspace)
+        self.H1 = self.hash_to_key  # H1: G -> K (keyspace)
         self.H2 = self._hash_to_zr   # H2: R -> Z_p
         self.H3 = self._hash_to_zr   # H3: G -> Z_p
         # H4 implemented with AES in token encryption
@@ -71,7 +77,7 @@ class PrivBoxCrypto:
             h = hashlib.sha256(str(data).encode()).digest()
             return int.from_bytes(h, 'big')
     
-    def _hash_to_key(self, element: Any) -> bytes:
+    def hash_to_key(self, element: Any) -> bytes:
         """H1: Hash group element to AES key"""
         if CHARM_AVAILABLE:
             serialized = self.group.serialize(element)
@@ -89,7 +95,11 @@ class PrivBoxCrypto:
     def random_bytes(self, n: int = 32) -> bytes:
         """Generate random bytes"""
         return os.urandom(n)
-    
+
+    def generate_salt(self) -> bytes:
+        """Generate random salt for token encryption"""
+        return os.urandom(16)
+
     # === Group Operations ===
     
     def exp(self, base: Any, exponent: Any) -> Any:
