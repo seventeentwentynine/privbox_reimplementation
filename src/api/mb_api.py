@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from typing import List, Dict
 import base64
 import os
 
 from .models import Session, EncryptedToken, RuleTuple
-from core.crypto import crypto
-from core.tokenization import tokenizer
+from src.core.crypto import crypto
+from src.core.tokenization import token_encryption
 
 router = APIRouter()
+app = FastAPI(title="Middlebox API")
 
 class MiddleboxState:
     def __init__(self):
@@ -99,3 +100,5 @@ async def update_rules(rules: dict):
         # precompute encrypted rules for fast lookup
         pass
     return {"message": f"Updated {len(rules)} rules"}
+
+app.include_router(router)

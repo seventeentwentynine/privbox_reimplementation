@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from typing import List
 import base64
 import json
 import os
 
 from .models import Rule, RuleSet, RuleTuple
-from core.crypto import crypto
+from src.core.crypto import crypto
 
 router = APIRouter()
+app = FastAPI(title="Rule Generator API")
 
 # simple in-memory storage for now
 class RuleStorage:
@@ -86,3 +87,5 @@ async def load_rules():
     ]
     rule_storage.rules = sample_rules
     return {"message": f"Loaded {len(sample_rules)} rules", "rules": sample_rules}
+
+app.include_router(router)
