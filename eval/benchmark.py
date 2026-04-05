@@ -158,3 +158,19 @@ def save_to_csv(data: list, filename: str):
         dict_writer.writeheader()
         dict_writer.writerows(data)
     print(f"[*] Saved results to {filepath}.")
+
+
+if __name__ == "__main__":
+    # Test increments to prove the linear scaling.
+    n_test_values = [10, 50, 100, 500, 1000]
+    m_test_values = [10, 50, 100, 500, 1000]
+
+    # Test 1: Rule Scaling (O(n))
+    rule_results = test_rule_scaling(n_test_values)
+    save_to_csv(rule_results, "rule_scaling_metrics.csv")
+
+    # Test 2: Token Scaling (O(m))
+    token_results = test_token_scaling(m_test_values)
+    save_to_csv(token_results, "token_scaling_metrics.csv")
+
+    print("[+] Benchmarking complete! CSVs are ready for graphing.")
