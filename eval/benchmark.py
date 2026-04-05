@@ -139,3 +139,22 @@ def test_token_scaling(m_values: list) -> list:
         })
     
     return results
+
+
+def save_to_csv(data: list, filename: str):
+    """
+    Helper Function to save our test dictionaries to a CSV file.
+    """
+    if not data:
+        print(f"No data to save for {filename}")
+        return
+
+    os.makedirs("eval/results", exist_ok=True)
+    filepath = f"eval/results/{filename}"
+    keys = data[0].keys()
+
+    with open(filepath, 'w', newline='') as f:
+        dict_writer = csv.DictWriter(f, fieldnames=keys)
+        dict_writer.writeheader()
+        dict_writer.writerows(data)
+    print(f"[*] Saved results to {filepath}.")
