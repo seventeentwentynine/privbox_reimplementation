@@ -13,6 +13,9 @@ from cryptography.hazmat.backends import default_backend
 
 group = PairingGroup('SS512')
 
+# Create a deterministic, shared generator across all processes
+G_BASE = group.hash(b"PrivBox_Shared_Generator", G1)
+
 def serialize_element(element: Any) -> bytes:
     if element is None:
         return b""

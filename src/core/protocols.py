@@ -3,15 +3,18 @@ protocols.py
 Implements the explicit mathematical state machines.
 """
 from typing import List, Tuple, Any
-from crypto import group, G1, ZR, pair, H1, H2, H3, dem_encrypt, dem_decrypt
+from crypto import group, G1, ZR, pair, H1, H2, H3, dem_encrypt, dem_decrypt, G_BASE, serialize_element, deserialize_element
+
+## The step number here which are used to tag the functions are from page 4, section
 
 class RulePreparationRG:
     def __init__(self, rules: List[bytes]):
         self.rules = rules
         self.a = group.random(ZR)
         self.r = group.random(ZR)
-        self.S_A = (group.random(G1) ** 1) ** self.a
-        self.L = (group.random(G1) ** 1) ** self.r
+        #Use shared generator
+        self.S_A = G_BASE ** self.a
+        self.L = G_BASE ** self.r
 
     def step1_get_commitments(self) -> Tuple[Any, Any]:
         return self.S_A, self.L
@@ -27,13 +30,15 @@ class RulePreparationRG:
             V_list.append(V_i)
         return V_list
 
-    def step5_generate_obfuscated_rules(self, Y: bytes, R_tilde: Any, S_i_list: List[Any]) -> Tuple[Any, List[Tuple[Any, Any, Any]]]:
+    def step5_generate_obfuscated_rules(self, Y: bytes, R_tilde: Any, S_i_list: List[Any]) -> Tuple[
+        Any, List[Tuple[Any, Any, Any]]]:
         dem_key = H1(self.S_A_tilde)
         decrypted_y_ytilde = dem_decrypt(dem_key, Y)
 
         y_len = len(decrypted_y_ytilde) // 2
-        y = group.deserialize(decrypted_y_ytilde[:y_len])
-        y_tilde = group.deserialize(decrypted_y_ytilde[y_len:])
+        #Use custom deserializer
+        y = deserialize_element(decrypted_y_ytilde[:y_len])
+        y_tilde = deserialize_element(decrypted_y_ytilde[y_len:])
 
         self.R = R_tilde ** self.r
         self.R_hat = self.R * self.S_A_tilde
@@ -41,14 +46,12 @@ class RulePreparationRG:
         rule_tuples = []
         for S_i in S_i_list:
             R_i = S_i ** self.r
-            g_base = group.random(G1) ** 1
-
-            R_i_hat = g_base ** (y * H3(R_i))
-            R_i_tilde = (R_i ** y) * (g_base ** (y * y_tilde * H3(R_i)))
-
+            R_i_hat = G_BASE ** (y * H3(R_i))
+            R_i_tilde = (R_i ** y) * (G_BASE ** (y * y_tilde * H3(R_i)))
             rule_tuples.append((R_i, R_i_tilde, R_i_hat))
 
         return self.R, rule_tuples
+
 
 class RulePreparationMB:
     def __init__(self):
@@ -57,9 +60,9 @@ class RulePreparationMB:
         self.y = group.random(ZR)
         self.y_tilde = group.random(ZR)
 
-        g_base = group.random(G1) ** 1
-        self.S_B = g_base ** self.b
-        self.S = g_base ** self.s
+        #Use shared generator
+        self.S_B = G_BASE ** self.b
+        self.S = G_BASE ** self.s
 
     def step2_get_commitments(self) -> Tuple[Any, Any]:
         return self.S_B, self.S
@@ -72,8 +75,9 @@ class RulePreparationMB:
             if V_list[i] != expected_V_i:
                 raise ValueError("Mathematical verification of V_i failed.")
 
-        y_bytes = group.serialize(self.y)
-        y_tilde_bytes = group.serialize(self.y_tilde)
+        #Use custom serializer
+        y_bytes = serialize_element(self.y)
+        y_tilde_bytes = serialize_element(self.y_tilde)
         dem_key = H1(self.S_B_tilde)
         Y = dem_encrypt(dem_key, y_bytes + y_tilde_bytes)
 
@@ -84,21 +88,23 @@ class RulePreparationMB:
 
     def step6_finalize_rules(self, R: Any, R_hat: Any, rule_tuples: List[Tuple[Any, Any, Any]], L: Any):
         R_calc = R_hat / self.S_B_tilde
-        g = group.random(G1) ** 1
 
-        if pair(R_calc, g) != pair(self.S_B_tilde ** self.s, L):
+        #Use shared generator for pairing check
+        if pair(R_calc, G_BASE) != pair(self.S_B_tilde ** self.s, L):
             raise ValueError("Pairing constraint e(R, g) = e(R_tilde, L) failed.")
 
         return R_calc, rule_tuples
+
 
 class PreprocessingEndpoint:
     def __init__(self, k_s1: Any, k_s2: Any):
         self.k_s1 = k_s1
         self.k_s2 = k_s2
-        self.K_s1 = (group.random(G1) ** 1) ** self.k_s1
+        self.K_s1 = G_BASE ** self.k_s1
 
     def compute_K_tilde(self, R_i_tilde: Any, R_i_hat: Any) -> Any:
         return (R_i_tilde ** self.k_s1) * (R_i_hat ** self.k_s2)
+
 
 class PreprocessingMB:
     def __init__(self, y: Any, y_tilde: Any):
