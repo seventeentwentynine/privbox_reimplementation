@@ -1,7 +1,11 @@
 from fastapi import FastAPI, APIRouter, HTTPException
+from datetime import datetime
 from typing import List
 import base64
+import hashlib
+import json
 import os
+import urllib.request
 
 from .models import Session, EncryptedToken
 from src.core.crypto import crypto
@@ -19,35 +23,70 @@ class EndpointState:
 
 endpoint_state = EndpointState()
 
+
+def _demo_params():
+    order = crypto.order
+    a = 123456789 % order
+    b = 987654321 % order
+    s = 555555555 % order
+    r = 111111111 % order
+    g = crypto.get_generator()
+
+    R = crypto.exp(crypto.exp(crypto.exp(g, a), b), s)
+    R = crypto.exp(R, r)
+
+    k_s1 = 222222222 % order
+    k_s2 = 333333333 % order
+    k_r = b"fixed_seed_for_demo"
+    initial_salt = int.from_bytes(hashlib.sha256(k_r).digest()[:8], "big")
+
+    return R, k_s1, k_s2, k_r, initial_salt
+
+
+def _ensure_demo_crypto(reset: bool = False):
+    if reset or token_encryption.R is None:
+        R, k_s1, k_s2, k_r, _ = _demo_params()
+        token_encryption.initialize_first_session(R, k_s1, k_s2, k_r)
+
+
+def _middlebox_url() -> str:
+    return os.getenv("MIDDLEBOX_INSPECT_URL", "http://middlebox:8000/traffic/inspect")
+
+
+def _post_json(url: str, payload: dict) -> dict:
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return json.loads(response.read().decode("utf-8"))
+
 @router.post("/connect")
 async def connect_to_mb():
     """Initialize connection to middlebox"""
-    # Generate session keys from TLS handshake (simplified)
     session_id = base64.b64encode(os.urandom(16)).decode()
-    
-    # Derive keys as per paper: k_SSL, k_s1, k_s2, k_r
-    master_secret = os.urandom(32)
-    
+    _, k_s1, k_s2, k_r, initial_salt = _demo_params()
+
     session = Session(
         session_id=session_id,
-        k_s1=os.urandom(32),
-        k_s2=os.urandom(32),
-        k_ssl=master_secret[:16],
-        k_r=os.urandom(16)
+        created_at=datetime.now(),
+        k_s1=k_s1.to_bytes(32, "big"),
+        k_s2=k_s2.to_bytes(32, "big"),
+        k_ssl=b"demo-master-secret"[:16],
+        k_r=k_r
     )
     
     endpoint_state.sessions[session_id] = session
-    
-    # Generate initial salt from k_r
-    endpoint_state.salt = crypto.generate_salt()
-    
-    # Compute K_s1 = g^{k_s1} for preprocessing
+    endpoint_state.salt = initial_salt
+
     K_s1 = base64.b64encode(session.k_s1).decode()
     
     return {
         "session_id": session_id,
         "K_s1": K_s1,
-        "initial_salt": base64.b64encode(endpoint_state.salt).decode()
+        "initial_salt": base64.b64encode(endpoint_state.salt.to_bytes(16, "big")).decode()
     }
 
 @router.post("/send")
@@ -56,53 +95,28 @@ async def send_data(request: dict):
     Token Encryption Phase (Fig. 6 in paper)
     Sender encrypts payload into tokens
     """
-    session_id = request.get("session_id")
     payload = request.get("payload", "")
-    
-    session = endpoint_state.sessions.get(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Tokenize the payload
+    # Keep demo behavior deterministic and in sync with MB's freshly published rule state.
+    _ensure_demo_crypto(reset=True)
+
     if isinstance(payload, str):
-        tokens = token_encryption.delimiter_based_tokenization(payload)
+        payload_bytes = payload.encode("utf-8")
     else:
-        tokens = token_encryption.window_based_tokenization(payload.encode())
-    
-    encrypted_tokens = []
-    
-    for token in tokens:
-        # Check counter table for token reuse
-        token_key = str(token)
-        count = endpoint_state.counter_table.get(token_key, 0)
-        
-        # Compute T_i (session token)
-        # In real implementation: T_i = (R)^{H2(t_i)·k_s1} · g^{k_s2·H3(...)}
-        
-        # For now, simplified:
-        token_bytes = token.encode() if isinstance(token, str) else token
-        count_bytes = count.to_bytes(4, 'big')
-        
-        # D_t = H4(S_salt + count, T_i)
-        h4_input = endpoint_state.salt + count_bytes + token_bytes
-        ciphertext = crypto.hash_to_key(h4_input)
-        
-        encrypted_tokens.append(EncryptedToken(
-            salt=base64.b64encode(endpoint_state.salt).decode(),
-            ciphertext=base64.b64encode(ciphertext).decode(),
-            offset=0  # Add proper offset in real implementation
-        ))
-        
-        # Update counter
-        endpoint_state.counter_table[token_key] = count + 1
-    
-    # Also send regular TLS traffic (simplified)
-    tls_encrypted = base64.b64encode(payload.encode()).decode()
-    
+        payload_bytes = payload
+
+    print(f"[Sender] Encrypting payload: {payload_bytes}")
+    encrypted_tokens = token_encryption.encrypt_payload(payload_bytes)
+    print(f"[Sender] Generated {len(encrypted_tokens)} encrypted tokens")
+
+    token_ciphertexts = [base64.b64encode(D_t).decode("utf-8") for D_t, _, _ in encrypted_tokens]
+    middlebox_response = _post_json(_middlebox_url(), {"tokens": token_ciphertexts})
+    print(f"[Sender] Middlebox response: {middlebox_response}")
+
     return {
-        "session_id": session_id,
-        "encrypted_tokens": [t.dict() for t in encrypted_tokens],
-        "tls_traffic": tls_encrypted
+        "payload": payload_bytes.decode("utf-8", errors="replace"),
+        "token_count": len(encrypted_tokens),
+        "first_tokens": token_ciphertexts[:5],
+        "middlebox_response": middlebox_response,
     }
 
 @router.post("/receive/validate")

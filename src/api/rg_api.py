@@ -1,8 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException
 from typing import List
 import base64
 import json
 import os
+import urllib.request
 
 from .models import Rule, RuleSet, RuleTuple
 from src.core.crypto import crypto
@@ -32,9 +33,30 @@ class RuleStorage:
 
 rule_storage = RuleStorage()
 
+
+def _demo_middlebox_url() -> str:
+    return os.getenv("MIDDLEBOX_URL", "http://middlebox:8000/rules/update")
+
 @router.get("/rules", response_model=List[Rule])
 async def get_rules():
     return rule_storage.rules
+
+
+@router.post("/rules/add")
+async def add_rule(request: dict):
+    keyword = request.get("keyword")
+    if not keyword:
+        raise HTTPException(status_code=400, detail="keyword is required")
+
+    rule_id = request.get("rule_id") or f"rule_{len(rule_storage.rules) + 1}"
+    rule = Rule(rule_id=rule_id, keyword=keyword)
+    rule_storage.rules.append(rule)
+
+    return {
+        "message": "Rule added",
+        "rule": rule,
+        "total_rules": len(rule_storage.rules),
+    }
 
 @router.post("/rules/prepare")
 async def prepare_rules_with_mb(mb_public_key: str):
@@ -87,5 +109,28 @@ async def load_rules():
     ]
     rule_storage.rules = sample_rules
     return {"message": f"Loaded {len(sample_rules)} rules", "rules": sample_rules}
+
+
+@router.post("/rules/publish")
+async def publish_rules():
+    if not rule_storage.rules:
+        raise HTTPException(status_code=400, detail="No rules to publish")
+
+    payload = {"rules": [rule.model_dump() for rule in rule_storage.rules]}
+    request = urllib.request.Request(
+        _demo_middlebox_url(),
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(request, timeout=10) as response:
+        response_data = json.loads(response.read().decode("utf-8"))
+
+    return {
+        "message": "Rules published to middlebox",
+        "published_rules": [rule.model_dump() for rule in rule_storage.rules],
+        "middlebox_response": response_data,
+    }
 
 app.include_router(router)
