@@ -27,7 +27,7 @@ class PrivBoxMiddlebox:
         self.mb_state = RulePreparationMB()
         self.inspector = None
         self.obfuscated_rules = []
-        self.R_mock = group.random(G1) ** 1
+        self.R_mock = group.hash(b"PrivBox_R_mock", G1)
 
     def handle_rg_connection(self, conn: socket.socket) -> None:
         print("[*] Rule Generator connection established.")
