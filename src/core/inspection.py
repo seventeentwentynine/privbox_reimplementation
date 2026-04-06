@@ -1,72 +1,56 @@
-# src/core/inspection.py
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+"""
+inspection.py
 
-from .crypto import crypto
+Implements the highly efficient Traffic Inspection logic for the Middlebox.
+Maintains the internal count table (CT_m) to resist token frequency analysis.
+"""
 
-@dataclass
-class RuleEntry:
-    rule_id: str
-    count: int
-    E_r: bytes
+from typing import Dict, Any, List
+from crypto import H4
 
-class TrafficInspection:
-    def __init__(self):
-        self.search_tree: Dict[bytes, str] = {}
-        self.rule_counter: Dict[str, RuleEntry] = {}
-        self.session_rules: Dict[str, Any] = {}   # I_i per rule
-        self.salt: int = 0
 
-    def initialize_session(self, session_rules: Dict[str, Any], initial_salt: int):
-        self.session_rules = session_rules
-        self.salt = initial_salt
+class TrafficInspector:
+    def __init__(self, session_rules: List[Any], salt: int):
+        """
+        Initializes the Fast Search Tree (hash map) with the initial state
+        of the encrypted rules based on the synchronized salt.
+        """
+        self.salt = salt
+        self.session_rules = session_rules  # Stores the adapted I_i values
+        self.count_table: Dict[int, int] = {i: 0 for i in range(len(session_rules))}
+        self.search_tree: Dict[bytes, int] = {}
+
+        self._rebuild_search_tree()
+
+    def _rebuild_search_tree(self) -> None:
+        """Precomputes and populates the dictionary mapping E_ri -> rule index."""
         self.search_tree.clear()
-        self.rule_counter.clear()
-        # Precompute E_r for count=0
-        for rule_id, I_i in session_rules.items():
-            E_r = crypto.H4(self.salt, I_i)
-            self.search_tree[E_r] = rule_id
-            self.rule_counter[rule_id] = RuleEntry(rule_id, 0, E_r)
+        for i, I_i in enumerate(self.session_rules):
+            count = self.count_table[i]
+            # E_ri = H4(S_salt + count, I_i)
+            E_ri = H4(self.salt + count, I_i)
+            self.search_tree[E_ri] = i
 
-    def update_salt(self, new_salt: int):
-        self.salt = new_salt
-        self._rebuild_tree()
+    def inspect_token(self, D_ti: bytes) -> bool:
+        """
+        Evaluates incoming token D_ti in O(1) time complexity.
+        If a match is established, the internal count for that signature
+        is incremented, and the search tree node is rebuilt to track the next occurrence.
+        """
+        if D_ti in self.search_tree:
+            rule_index = self.search_tree
 
-    def _rebuild_tree(self):
-        self.search_tree.clear()
-        for rule_id, entry in self.rule_counter.items():
-            I_i = self.session_rules[rule_id]
-            E_r = crypto.H4(self.salt + entry.count, I_i)
-            entry.E_r = E_r
-            self.search_tree[E_r] = rule_id
+            # Action logic triggered here (e.g., alert administrator, drop packet)
+            print(f" Critical Signature Match Identified. Rule Index: {rule_index}")
 
-    def inspect_token(self, D_t: bytes) -> Optional[str]:
-        if D_t in self.search_tree:
-            rule_id = self.search_tree[D_t]
-            self._handle_match(rule_id)
-            return rule_id
-        return None
+            # Update state sequentially
+            self.count_table[rule_index] += 1
 
-    def inspect_payload(self, encrypted_tokens: List[bytes]) -> List[str]:
-        matches = []
-        for D_t in encrypted_tokens:
-            rule_id = self.inspect_token(D_t)
-            if rule_id:
-                matches.append(rule_id)
-        return matches
+            del self.search_tree
+            new_count = self.count_table[rule_index]
+            new_E_ri = H4(self.salt + new_count, self.session_rules[rule_index])
+            self.search_tree[new_E_ri] = rule_index
 
-    def _handle_match(self, rule_id: str):
-        # Step 1.1.1: take action (log, block, etc.)
-        print(f"MATCH: rule {rule_id} detected")
-        entry = self.rule_counter[rule_id]
-        # Remove old node
-        del self.search_tree[entry.E_r]
-        # Increment count
-        entry.count += 1
-        # Insert new node
-        I_i = self.session_rules[rule_id]
-        new_E_r = crypto.H4(self.salt + entry.count, I_i)
-        entry.E_r = new_E_r
-        self.search_tree[new_E_r] = rule_id
+            return True
 
-traffic_inspection = TrafficInspection()
+        return False
