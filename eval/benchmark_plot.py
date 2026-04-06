@@ -49,8 +49,8 @@ def plot_token_scaling():
 
     # Set up the plot.
     plt.figure(figsize=(8, 5))
-    plt.plot(df['m_rules'], df['token_encryption_time_sec'], marker='^', color='mediumturquoise', label='Token Encryption Time (Sender)')
-    plt.plot(df['m_rules'], df['traffic_inspection_time_sec'], marker='d', color='limegreen', label='Traffic Inspection Time (Middlebox)')
+    plt.plot(df['m_tokens'], df['token_encryption_time_sec'], marker='^', color='mediumturquoise', label='Token Encryption Time (Sender)')
+    plt.plot(df['m_tokens'], df['traffic_inspection_time_sec'], marker='d', color='limegreen', label='Traffic Inspection Time (Middlebox)')
 
     # Set up the grid.
     plt.title('System Performance VS Number of Tokens (O(m))')
