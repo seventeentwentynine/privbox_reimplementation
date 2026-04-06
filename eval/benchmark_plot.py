@@ -60,3 +60,10 @@ def plot_token_scaling():
     plt.legend()
     plt.savefig("eval/results/token_scaling_graph.png")
     print("[*] Saved Token Scaling Graph!")
+
+
+if __name__ == "__main__":
+    print("--- Generating Performance Graphs ---")
+    plot_rule_scaling()
+    plot_token_scaling()
+    print("[+] Performance Graphs Generated!")
