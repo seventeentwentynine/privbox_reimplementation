@@ -44,3 +44,19 @@ def plot_token_scaling():
         print(f"[-] Could not find {csv_path}.")
         return
     
+    # Create DataFrame from CSV data.
+    df = pd.read_csv(csv_path)
+
+    # Set up the plot.
+    plt.figure(figsize=(8, 5))
+    plt.plot(df['m_rules'], df['token_encryption_time_sec'], marker='^', color='mediumturquoise', label='Token Encryption Time (Sender)')
+    plt.plot(df['m_rules'], df['traffic_inspection_time_sec'], marker='d', color='limegreen', label='Traffic Inspection Time (Middlebox)')
+
+    # Set up the grid.
+    plt.title('System Performance VS Number of Tokens (O(m))')
+    plt.xlabel('Number of Tokens (m)')
+    plt.ylabel('Time (seconds)')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig("eval/results/token_scaling_graph.png")
+    print("[*] Saved Token Scaling Graph!")
