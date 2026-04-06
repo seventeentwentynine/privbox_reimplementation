@@ -74,7 +74,7 @@ def run_sender() -> None:
     payload = b"GET / HTTP/1.1\r\nHost: server.local\r\nUNION SELECT password FROM admin;\r\n"
     tokens = tokenize_payload(payload)
 
-    R_mock = group.random(G1) ** 1
+    R_mock = group.hash(b"PrivBox_R_mock", G1)
 
     for token in tokens:
         D_ti = state.generate_encrypted_token(token, R_mock)
