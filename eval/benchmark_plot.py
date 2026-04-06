@@ -35,3 +35,12 @@ def plot_rule_scaling():
     print("[*] Saved Rule Scaling Graph!")
 
 
+def plot_token_scaling():
+    """
+    Plot the O(m) of token scaling.
+    """
+    csv_path = "eval/results/token_scaling_metrics.csv"
+    if not os.path.exists(csv_path):
+        print(f"[-] Could not find {csv_path}.")
+        return
+    
