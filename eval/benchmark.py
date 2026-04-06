@@ -162,8 +162,8 @@ def save_to_csv(data: list, filename: str):
 
 if __name__ == "__main__":
     # Test increments to prove the linear scaling.
-    n_test_values = [10, 50, 100, 500, 1000]
-    m_test_values = [10, 50, 100, 500, 1000]
+    n_test_values = [1, 1000, 2000, 3000]
+    m_test_values = [1, 100, 500, 800]
 
     # Test 1: Rule Scaling (O(n))
     rule_results = test_rule_scaling(n_test_values)
