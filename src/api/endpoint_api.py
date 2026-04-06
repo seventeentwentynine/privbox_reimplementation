@@ -1,7 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException
 from typing import List
 import base64
-import hashlib
 import os
 import socket
 import threading
@@ -126,7 +125,7 @@ async def connect_to_mb():
     endpoint_state.sessions[session_id] = session
 
     # Generate initial salt from k_r
-    endpoint_state.salt = os.urandom(16)
+    endpoint_state.salt = crypto.generate_salt()
 
     # Compute K_s1 = g^{k_s1} for preprocessing
     K_s1 = base64.b64encode(session.k_s1).decode()
@@ -205,7 +204,7 @@ async def send_data(request: dict):
 
         # D_t = H4(S_salt + count, T_i)
         h4_input = endpoint_state.salt + count_bytes + token_bytes
-        ciphertext = hashlib.sha256(h4_input).digest()[:32]
+        ciphertext = crypto.hash_to_key(h4_input)
 
         encrypted_tokens.append(EncryptedToken(
             salt=base64.b64encode(endpoint_state.salt).decode(),
