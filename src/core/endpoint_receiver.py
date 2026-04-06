@@ -38,7 +38,7 @@ def run_receiver() -> None:
     state = SenderState()
     state.derive_keys(ekm_mock)
 
-    R_mock = group.random(G1) ** 1
+    R_mock = group.hash(b"PrivBox_R_mock", G1)
 
     try:
         # Receiver logic decrypts the internal TLS payload directly.
