@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from typing import List, Dict
 import base64
@@ -21,7 +22,10 @@ mb_state = MiddleboxState()
 @router.post("/session/init")
 async def init_session():
     session_id = base64.b64encode(os.urandom(16)).decode()
-    session = Session(session_id=session_id)
+    session = Session(
+        session_id=session_id,
+        created_at=datetime.now(timezone.utc)
+    )
     mb_state.sessions[session_id] = session
     return {"session_id": session_id}
 

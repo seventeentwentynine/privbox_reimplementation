@@ -102,7 +102,7 @@ def test_token_scaling(m_values: list) -> list:
     mb_session_id = mb_session_response["session_id"]
     requests.post(f"{MB_URL}/session/preprocess", json={
         "session_id": mb_session_id,
-        "K_s1": "dummy_base64_key="
+        "K_s1": "ZHVtbXlfa2V5"
     })
 
     # Initialize Sender session.

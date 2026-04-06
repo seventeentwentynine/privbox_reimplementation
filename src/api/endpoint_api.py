@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import FastAPI, APIRouter, HTTPException
 from typing import List
 import base64
@@ -33,7 +34,8 @@ async def connect_to_mb():
         k_s1=os.urandom(32),
         k_s2=os.urandom(32),
         k_ssl=master_secret[:16],
-        k_r=os.urandom(16)
+        k_r=os.urandom(16),
+        created_at=datetime.now(timezone.utc)
     )
     
     endpoint_state.sessions[session_id] = session
