@@ -2,7 +2,7 @@ import socket
 import struct
 import OpenSSL
 from protocols import PreprocessingEndpoint
-from crypto import group, ZR, G1, serialize_element, deserialize_element, H2, H3, H4
+from crypto import group, ZR, G1, serialize_element, deserialize_element, H2, H3, H4, G_BASE
 from tokenization import tokenize_payload
 from typing import Any
 
@@ -37,11 +37,13 @@ class SenderState:
         count = self.CT.get(token, 0)
 
         T_ti_tilde = R ** H2(token)
-        g_base = group.random(G1) ** 1
-        T_ti = (T_ti_tilde ** self.k_s1) * (g_base ** (self.k_s2 * H3(T_ti_tilde)))
+
+        T_ti = (T_ti_tilde ** self.k_s1) * (G_BASE ** (self.k_s2 * H3(T_ti_tilde)))
 
         D_ti = H4(self.S_salt + count, T_ti)
+
         self.CT[token] = count + 1
+
         return D_ti
 
 def run_sender() -> None:
