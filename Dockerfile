@@ -1,15 +1,47 @@
-FROM python:3.10-slim
+FROM python:3.11-slim-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    flex \
+    bison \
+    wget \
+    curl \
+    ca-certificates \
+    openssl \
+    libgmp-dev \
+    libssl-dev \
+    m4 \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    iproute2 \
+    tcpdump \
+  && rm -rf /var/lib/apt/lists/*
+
+# Build and install PBC from source
+RUN cd /tmp \
+  && wget https://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz \
+  && tar xzf pbc-0.5.14.tar.gz \
+  && cd pbc-0.5.14 \
+  && ./configure \
+  && make -j"$(nproc)" \
+  && make install \
+  && ldconfig \
+  && cd / \
+  && rm -rf /tmp/pbc-0.5.14 /tmp/pbc-0.5.14.tar.gz
 
 WORKDIR /app
 
-# Install system dependencies for coincurve (libsecp256k1)
-RUN apt-get update && apt-get install -y \
-    libsecp256k1-dev \
-    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt /app/requirements.txt
+RUN python -m pip install --upgrade pip setuptools wheel \
+  && pip install --no-cache-dir -r /app/requirements.txt
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ /app/src/
+COPY scripts/ /app/scripts/
+COPY tests/ /app/tests/
 
-COPY . .
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-c", "print('ok')"]

@@ -1,49 +1,122 @@
-# docker-compose.yml
+name: privbox_docker_demo
 
 services:
+  setup:
+    build: .
+    command: ["bash", "/app/scripts/setup.sh"]
+    environment:
+      KEY_DIR: /data/keys
+      CERT_DIR: /data/certs
+      LOG_DIR: /data/logs
+    volumes:
+      - keys:/data/keys
+      - certs:/data/certs
+      - logs:/data/logs
+    restart: "no"
 
-  rule-generator:  # Rule Generator
+  mb:
     build: .
-    container_name: privbox-rg
-    ports:
-      - "8001:8000"  # Accessible on localhost at port 8001
-    volumes:
-      - .:/app
+    command: ["python", "-u", "/app/src/mb_main.py"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
     environment:
-      - PYTHONUNBUFFERED=1
-    command: uvicorn src.api.rg_api:app --host 0.0.0.0 --port 8000 --reload
-  
-  middlebox:  # Middlebox
-    build: .
-    container_name: privbox-mb
-    ports:
-      - "8002:8000"  # Accessible on localhost at port 8002
+      KEY_DIR: /data/keys
+      CERT_DIR: /data/certs
+      MB_STATE_DIR: /data/mb_state
+      LOG_DIR: /data/logs
+      MB_RULE_PREP_PORT: "9000"
+      MB_ENDPOINT_PORT: "9001"
+      TLS_PROXY_PORT: "8443"
+      RECEIVER_HOST: receiver
+      RECEIVER_TLS_PORT: "8443"
     volumes:
-      - .:/app
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: uvicorn src.api.mb_api:app --host 0.0.0.0 --port 8000 --reload
-  
-  sender:
-    build: .
-    container_name: privbox-sender
+      - keys:/data/keys
+      - certs:/data/certs:ro
+      - mb_state:/data/mb_state
+      - logs:/data/logs
     ports:
-      - "8003:8000"  # Accessible on localhost at port 8003
-    volumes:
-      - .:/app
-    environment:
-      - PYTHONUNBUFFERED=1
-      - ROLE=sender
-    command: uvicorn src.api.endpoint_api:app --host 0.0.0.0 --port 8000 --reload
+      - "9000:9000"
+      - "9001:9001"
+      - "8443:8443"
+    healthcheck:
+      test: ["CMD", "python", "/app/scripts/wait_for_tcp.py", "127.0.0.1", "9001", "--timeout", "1"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
   receiver:
     build: .
-    container_name: privbox-receiver
-    ports:
-      - "8004:8000"  # Accessible on localhost at port 8004
-    volumes:
-      - .:/app
+    command: ["python", "-u", "/app/src/receiver_main.py"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      mb:
+        condition: service_healthy
     environment:
-      - PYTHONUNBUFFERED=1
-      - ROLE=receiver
-    command: uvicorn src.api.endpoint_api:app --host 0.0.0.0 --port 8000 --reload
+      KEY_DIR: /data/keys
+      CERT_DIR: /data/certs
+      LOG_DIR: /data/logs
+      MB_HOST: mb
+      MB_ENDPOINT_PORT: "9001"
+      LISTEN_HOST: "0.0.0.0"
+      LISTEN_PORT: "8443"
+      TLS_EXPORT_LABEL: "EXPORTER-PRIVBOX-V1"
+      TLS_EXPORT_LEN: "64"
+    volumes:
+      - keys:/data/keys:ro
+      - certs:/data/certs:ro
+      - logs:/data/logs
+
+  rg:
+    build: .
+    command: ["python", "-u", "/app/src/rg_main.py"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      mb:
+        condition: service_healthy
+    environment:
+      KEY_DIR: /data/keys
+      LOG_DIR: /data/logs
+      MB_HOST: mb
+      MB_RULE_PREP_PORT: "9000"
+    volumes:
+      - keys:/data/keys
+      - logs:/data/logs
+    restart: "no"
+
+  sender:
+    build: .
+    command: ["python", "-u", "/app/src/sender_main.py"]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      mb:
+        condition: service_healthy
+      receiver:
+        condition: service_started
+    environment:
+      KEY_DIR: /data/keys
+      CERT_DIR: /data/certs
+      LOG_DIR: /data/logs
+      MB_HOST: mb
+      MB_ENDPOINT_PORT: "9001"
+      TLS_PROXY_HOST: mb
+      TLS_PROXY_PORT: "8443"
+      TLS_SERVER_NAME: receiver
+      TLS_EXPORT_LABEL: "EXPORTER-PRIVBOX-V1"
+      TLS_EXPORT_LEN: "64"
+    volumes:
+      - keys:/data/keys:ro
+      - certs:/data/certs:ro
+      - logs:/data/logs
+    stdin_open: true
+    tty: true
+    restart: "no"
+
+volumes:
+  keys:
+  certs:
+  mb_state:
+  logs:
